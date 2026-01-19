@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+  alpine-xfce4-xrdp:
+    image: alpine-xfce4-xrdp:17
+    hostname: alpine-xfce4-xrdp
+    shm_size: '1gb'
+    devices:
+      - /dev/fuse
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "3389:3389"

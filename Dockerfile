@@ -52,7 +52,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # إعدادات مجلد الـ VNC والباسورد للمستخدم root
 RUN mkdir -p /root/.vnc && \
-    echo "mosap@123123" | vncpasswd -f > /root/.vnc/passwd && \
+    echo "sudospace" | vncpasswd -f > /root/.vnc/passwd && \
     chmod 600 /root/.vnc/passwd
 
 # إعداد سكريبت الـ xstartup لتشغيل الواجهة بشريط نظيف بدون أخطاء الخروج المبكر

@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 kalilinux/kali-rolling
+FROM --platform=linux/amd64 ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=root
@@ -21,16 +21,18 @@ RUN git clone --depth 1 https://github.com/vinceliuice/Win11-gtk-theme.git /tmp/
 RUN mkdir -p /usr/share/backgrounds/xfce && \
     curl -sSL -o /usr/share/backgrounds/xfce/xfce-blue.jpg https://raw.githubusercontent.com/alvatip/Windows11-Wallpapers/main/Dark/img0.jpg
 
-# 4. تثبيت متصفح Chromium الخفيف والمستقر (حل مشكلة كراش المتصفح)
-RUN apt update -y && apt install --no-install-recommends -y chromium
+# 4. تثبيت Google Chrome
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt update -y && apt install --no-install-recommends -y google-chrome-stable
 
 # 5. تثبيت Visual Studio Code
 RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/packages.microsoft.gpg && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list && \
     apt update -y && apt install --no-install-recommends -y code
 
-# 6. تعديل اختصارات تشغيل البرامج لتعمل بصلاحية الـ Root بأمان وبدون كراش
-RUN sed -i 's/Exec=chromium %U/Exec=chromium --no-sandbox --user-data-dir=\/root\/.config\/chromium %U/g' /usr/share/applications/chromium.desktop || true && \
+# 6. تعديل اختصارات تشغيل البرامج لتعمل بصلاحية الـ Root بأمان
+RUN sed -i 's/Exec=\/usr\/bin\/google-chrome-stable %U/Exec=\/usr\/bin\/google-chrome-stable --no-sandbox --disable-dev-shm-usage --disable-gpu --user-data-dir=\/root\/.config\/google-chrome %U/g' /usr/share/applications/google-chrome.desktop || true && \
     sed -i 's/Exec=\/usr\/share\/code\/code/Exec=\/usr\/share\/code\/code --no-sandbox --user-data-dir=\/root\/.config\/Code/g' /usr/share/applications/code.desktop || true
 
 # 7. تعيين المظهر الافتراضي للثيم والأيقونات برمجياً بشكل مستقر

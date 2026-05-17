@@ -3,7 +3,7 @@ FROM --platform=linux/amd64 ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=root
 
-# 1. تثبيت الواجهة + xRDP بدلاً من VNC
+# 1. تثبيت الواجهة + xRDP والأدوات الأساسية
 RUN apt update -y && apt install --no-install-recommends -y \
     xfce4 xfce4-goodies \
     xrdp xorgxrdp \
@@ -36,7 +36,7 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor
 RUN sed -i 's/Exec=\/usr\/bin\/google-chrome-stable %U/Exec=\/usr\/bin\/google-chrome-stable --no-sandbox --user-data-dir=\/root\/.config\/google-chrome %U/g' /usr/share/applications/google-chrome.desktop || true && \
     sed -i 's/Exec=\/usr\/share\/code\/code/Exec=\/usr\/share\/code\/code --no-sandbox --user-data-dir=\/root\/.config\/Code/g' /usr/share/applications/code.desktop || true
 
-# 7. تعيين المظهر الافتراضي للثيم والأيقونات
+# 7. تعيين المظهر الافتراضي للثيم والأيقونات برمجياً
 RUN mkdir -p /root/.config/xfce4/xfconf/xfce-perchannel-xml && \
     cat << 'EOF' > /root/.config/xfce4/xfconf/xfce-perchannel-xml/xsettings.xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -54,11 +54,32 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # إعداد كلمة مرور للمستخدم root (للاتصال عبر xRDP)
 RUN echo "root:mosap@123123" | chpasswd
 
-# تكوين xRDP لاستخدام سطح المكتب XFCE
-RUN sed -i 's/^exec .*/startxfce4/' /etc/xrdp/startwm.sh
+# ضبط إعدادات xRDP ليعمل بشكل صحيح ويتعرف على واجهة XFCE بشكل قطعي ومستقر
+RUN sed -i 's/port=3389/port=0.0.0.0:3389/g' /etc/xrdp/xrdp.ini && \
+    echo "startxfce4" > /root/.xsession && \
+    chmod +x /root/.xsession
+
+# تهيئة ملف تشغيل مدير النوافذ الافتراضي لـ xRDP
+RUN cat << 'EOF' > /etc/xrdp/startwm.sh
+#!/bin/sh
+if [ -r /etc/profile ]; then
+    . /etc/profile
+fi
+if [ -r ~/.bash_profile ]; then
+    . ~/.bash_profile
+fi
+test -x /etc/X11/Xsession && exec /etc/X11/Xsession
+exec startxfce4
+EOF
+RUN chmod +x /etc/xrdp/startwm.sh
 
 # فتح منفذ xRDP
 EXPOSE 3389
 
-# تشغيل خدمة xRDP في الخلفية وإبقاء الحاوية عاملة
-CMD service xrdp start && tail -f /dev/null
+# تشغيل الـ Services بشكل متتابع مع تنظيف الملفات المؤقتة القديمة لضمان عدم حدوث تعليق
+CMD rm -rf /var/run/xrdp/* /var/run/xrdp.pid && \
+    mkdir -p /var/run/xrdp /var/run/xrdp/sockdir && \
+    chown -R xrdp:xrdp /var/run/xrdp && \
+    /usr/sbin/xrdp-sesman --nodaemon & \
+    sleep 1 && \
+    exec /usr/sbin/xrdp --nodaemon

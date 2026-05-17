@@ -3,7 +3,7 @@ FROM --platform=linux/amd64 ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV USER=root
 
-# 1. تثبيت الواجهة مع حزمة الإضافات والأدوات الأساسية (تمت إضافة xfce4-goodies لدعم شريط المهام والأيقونات)
+# 1. تثبيت الواجهة مع حزمة الإضافات والأدوات الأساسية
 RUN apt update -y && apt install --no-install-recommends -y \
     xfce4 xfce4-goodies tigervnc-standalone-server tigervnc-common tigervnc-tools sudo \
     dbus-x11 x11-xserver-utils net-tools curl wget git tzdata \
@@ -47,7 +47,7 @@ RUN mkdir -p /root/.config/xfce4/xfconf/xfce-perchannel-xml && \
 </channel>
 EOF
 
-# تنظيف كاش التثبيت لتقليص الحاوية وتسريعها
+# تنظيف كاش التثبيت
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # إعدادات مجلد الـ VNC والباسورد للمستخدم root
@@ -55,15 +55,12 @@ RUN mkdir -p /root/.vnc && \
     echo "mosap@123123" | vncpasswd -f > /root/.vnc/passwd && \
     chmod 600 /root/.vnc/passwd
 
-# إعداد سكريبت الـ xstartup لتشغيل الواجهة بشريط نظيف ومستقر وتلقائي مع نقل الشريط للأسفل
+# إعداد سكريبت الـ xstartup لتشغيل الواجهة بشريط نظيف بدون أخطاء الخروج المبكر
 RUN echo '#!/bin/sh\n\
 unset SESSION_MANAGER\n\
 unset DBUS_SESSION_BUS_ADDRESS\n\
-xrdb $HOME/.Xresources\n\
-# تصفير أي إعدادات شريط مهام قديمة ومتداخلة\n\
 rm -rf $HOME/.config/xfce4/panel/ $HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml\n\
-# تشغيل خادم الواجهة الافتراضي النظيف\n\
-exec startxfce4 &' > /root/.vnc/xstartup && \
+exec startxfce4' > /root/.vnc/xstartup && \
     chmod +x /root/.vnc/xstartup
 
 # فتح بورت VNC الأساسي
